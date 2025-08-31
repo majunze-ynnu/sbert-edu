@@ -33,7 +33,7 @@ def evaluate_model(model, test_df, threshold=0.6):
 def main():
     """Main function to train and evaluate the model."""
     # 1. Load Model
-    model = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+    model = SentenceTransformer('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2')
 
     # 2. Load Dataset
     train_dataset = SyllabusDataset(csv_file='data/train.csv')

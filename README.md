@@ -1,66 +1,86 @@
-# Syllabus-Text Consistency Analysis Model
+# 教学知识点与讲解内容一致性分析模型
 
-This project provides a complete pipeline to train a model for analyzing the consistency between a syllabus and a teaching text. It uses the `sentence-transformers` library to fine-tune the `all-MiniLM-L6-v2` model on a synthetically generated dataset.
+## 1. 项目概述
 
-## Project Structure
+本项目旨在提供一个完整、端到端的解决方案，用于训练一个深度学习模型，以分析**教学知识点**与**教学讲解内容**之间的一致性。其核心思想是通过先进的自然语言处理技术，将知识点和讲解内容都转换成高维度的数学向量（即“嵌入”或 Embeddings），然后通过计算这两个向量之间的相似度来判断它们内容的匹配程度。高相似度得分表示讲解内容与知识点要求一致，而低分则表示内容不匹配。
+
+该工具可广泛应用于以下场景：
+- **智能教育平台**：自动审核和校验课程内容是否符合其教学目标。
+- **课程设计师**：确保新编写的教材或脚本紧密围绕核心知识点。
+- **教师与学生**：快速验证学习资料或笔记是否与课程的知识点相关。
+
+本项目基于强大的 `sentence-transformers` 开源库，并选择了 `paraphrase-multilingual-MiniLM-L12-v2` 作为基础模型进行微调（Fine-tuning）。该模型因其在中文及多语言语义相似度任务上的卓越性能而备受青睐。
+
+## 2. 项目结构
+
+为了便于理解和维护，项目采用了清晰、模块化的目录结构：
 
 ```
 .
-├── .gitignore
+├── .gitignore               # 指定 Git 应忽略的文件和目录
 ├── data/
-│   ├── train.csv
-│   └── test.csv
+│   ├── train.csv            # 生成的训练数据集
+│   └── test.csv             # 生成的测试数据集
 ├── src/
-│   ├── generate_dataset.py
-│   ├── dataset.py
-│   ├── train.py
-│   └── inference.py
-├── requirements.txt
-└── README.md
+│   ├── generate_dataset.py  # 用于创建合成数据集的脚本
+│   ├── dataset.py           # 用于加载数据的 PyTorch Dataset 类
+│   ├── train.py             # 模型训练与评估的主脚本
+│   └── inference.py         # 用于对新数据进行推理的脚本
+├── requirements.txt         # 项目所有 Python 依赖库列表
+└── README.md                # 本项目说明文档
 ```
 
-- **`data/`**: Holds the training and testing datasets.
-- **`src/`**: Contains all the Python source code.
-- **`src/generate_dataset.py`**: Script to generate the synthetic `train.csv` and `test.csv` datasets.
-- **`src/dataset.py`**: Defines the PyTorch `Dataset` for loading the data.
-- **`src/train.py`**: Script for training the model. Due to environment constraints preventing the saving of large model files, this script now also includes the evaluation logic, which runs immediately after training.
-- **`src/inference.py`**: Example script to run inference with a trained model.
-- **`requirements.txt`**: Lists the necessary Python packages.
-- **`.gitignore`**: Specifies files and directories to be ignored by Git.
+## 3. 核心文件详解
 
-## How to Use
+### `src/generate_dataset.py`
+此脚本用于创建本项目所需的中文合成数据集。
+- **数据格式**:
+    - **第一列 (`sentence1`)**: 纯粹的知识点名称，例如 `李白《静夜思》`。
+    - **第二列 (`sentence2`)**: 对知识点的**单句**讲解，例如 `此诗描写了秋日夜晚诗人于屋内抬头望月而思念故乡的深切感受。`。
+    - **第三列 (`label`)**: 标签，`1` 表示匹配，`0` 表示不匹配。
+- **工作原理**: 脚本通过将知识点和其对应的单句讲解配对来创建正样本，通过将知识点与不相关的讲解配对来创建负样本。
+- **输出**: 在 `data/` 目录下生成 `train.csv` 和 `test.csv`，文件均为 `UTF-8` 编码。
 
-### 1. Installation
+### `src/dataset.py`
+此脚本定义了一个标准的 PyTorch `Dataset` 类，用于从 CSV 文件加载数据并为训练做准备。
 
-First, install the required packages:
+### `src/train.py`
+这是项目的核心，负责模型的训练和评估。
+- **模型加载**: 加载 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` 模型作为微调的基础。
+- **集成评估**: 训练完成后，脚本会立即在测试集上评估模型性能。
+
+### `src/inference.py`
+此脚本演示了如何在实际应用中使用模型进行预测。它加载模型，然后对一个一致和一个不一致的例子进行打分，以展示模型效果。
+
+## 4. 操作指南
+
+### 步骤 1: 环境设置
+建议使用虚拟环境。
 
 ```bash
+# 安装所有依赖项
 pip install -r requirements.txt
 ```
 
-### 2. Generate the Dataset
-
-Create the synthetic dataset by running the generation script. This will create `train.csv` and `test.csv` in the `data/` directory.
+### 步骤 2: 生成中文数据集
+运行以下命令来创建符合新格式的训练和测试数据。
 
 ```bash
 python src/generate_dataset.py
 ```
 
-### 3. Train and Evaluate the Model
-
-To train the model, run the `train.py` script. The script will fine-tune the `all-MiniLM-L6-v2` model and then immediately evaluate it on the test set, printing the performance metrics (Accuracy, Precision, Recall, F1-Score).
+### 步骤 3: 训练与评估模型
+运行主训练脚本来微调模型。
 
 ```bash
 python -m src.train
 ```
-**Note**: The fine-tuned model is not saved to disk due to system limitations in the execution environment. In a local environment, the trained model would be saved to the `output/` directory.
+终端将显示训练进度条，训练结束后会立即打印出评估结果。
 
-### 4. Run Inference
-
-The `inference.py` script demonstrates how to use a sentence-transformer model to check the consistency between a given syllabus and a teaching text. Since the fine-tuned model cannot be saved, this script uses the base `all-MiniLM-L6-v2` model as an example.
+### 步骤 4: 进行推理
+使用推理脚本来测试模型对新文本对的分析能力。
 
 ```bash
 python -m src.inference
 ```
-
-The script will output a consistency score between 0 and 1. A higher score indicates greater consistency.
+脚本会使用预设的中文例子来展示模型的预测结果。
