@@ -48,6 +48,7 @@ def main():
     warmup_steps = int(len(train_dataloader) * num_epochs * 0.1)
 
     print("Starting model training...")
+    # NOTE: Model is not saved to disk due to environment limitations.
     model.fit(train_objectives=[(train_dataloader, train_loss)],
               epochs=num_epochs,
               warmup_steps=warmup_steps,
